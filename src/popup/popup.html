@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AttentionBudget</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        width: 320px;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #1a1a2e;
+        color: #eaeaea;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .header h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .header p {
+        font-size: 12px;
+        color: #888;
+        margin-top: 4px;
+      }
+
+      .score-ring {
+        position: relative;
+        width: 140px;
+        height: 140px;
+        margin: 0 auto 20px;
+      }
+
+      .score-ring svg {
+        transform: rotate(-90deg);
+      }
+
+      .score-ring .bg {
+        fill: none;
+        stroke: #2d2d44;
+        stroke-width: 10;
+      }
+
+      .score-ring .progress {
+        fill: none;
+        stroke-width: 10;
+        stroke-linecap: round;
+        transition: stroke-dashoffset 0.5s ease;
+      }
+
+      .score-ring .progress.excellent {
+        stroke: #4caf50;
+      }
+      .score-ring .progress.good {
+        stroke: #8bc34a;
+      }
+      .score-ring .progress.fair {
+        stroke: #ffc107;
+      }
+      .score-ring .progress.poor {
+        stroke: #ff9800;
+      }
+      .score-ring .progress.critical {
+        stroke: #f44336;
+      }
+
+      .score-value {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+      }
+
+      .score-value .number {
+        font-size: 36px;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      .score-value .label {
+        font-size: 12px;
+        color: #888;
+      }
+
+      .budget-section {
+        background: #252542;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+
+      .budget-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .budget-header span {
+        font-size: 14px;
+        color: #aaa;
+      }
+
+      .budget-value {
+        font-size: 24px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .budget-value.warning {
+        color: #f44336;
+      }
+
+      .budget-bar {
+        height: 8px;
+        background: #2d2d44;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+
+      .budget-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4caf50, #8bc34a);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+
+      .budget-bar-fill.warning {
+        background: linear-gradient(90deg, #ff9800, #f44336);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .stat-card {
+        background: #252542;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+      }
+
+      .stat-card .value {
+        font-size: 20px;
+        font-weight: 600;
+        color: #fff;
+      }
+
+      .stat-card .label {
+        font-size: 11px;
+        color: #888;
+        margin-top: 4px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-primary {
+        background: #6366f1;
+        color: #fff;
+      }
+
+      .btn-primary:hover {
+        background: #4f46e5;
+      }
+
+      .btn-secondary {
+        background: #2d2d44;
+        color: #aaa;
+      }
+
+      .btn-secondary:hover {
+        background: #3d3d54;
+        color: #fff;
+      }
+
+      .trend-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        margin-top: 8px;
+      }
+
+      .trend-badge.improving {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+
+      .trend-badge.stable {
+        background: rgba(158, 158, 158, 0.2);
+        color: #9e9e9e;
+      }
+
+      .trend-badge.declining {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>AttentionBudget</h1>
+        <p>注意力预算管理器</p>
+      </div>
+
+      <div class="score-ring">
+        <svg width="140" height="140" viewBox="0 0 140 140">
+          <circle class="bg" cx="70" cy="70" r="60"></circle>
+          <circle
+            class="progress"
+            cx="70"
+            cy="70"
+            r="60"
+            id="scoreProgress"
+          ></circle>
+        </svg>
+        <div class="score-value">
+          <div class="number" id="scoreNumber">--</div>
+          <div class="label">注意力分数</div>
+          <div class="trend-badge" id="trendBadge">稳定</div>
+        </div>
+      </div>
+
+      <div class="budget-section">
+        <div class="budget-header">
+          <span>今日剩余预算</span>
+        </div>
+        <div class="budget-value" id="remainingBudget">-- 分钟</div>
+        <div class="budget-bar">
+          <div class="budget-bar-fill" id="budgetBarFill"></div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="value" id="switchCount">--</div>
+          <div class="label">切换次数</div>
+        </div>
+        <div class="stat-card">
+          <div class="value" id="focusSessions">--</div>
+          <div class="label">专注会话</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" id="dashboardBtn">查看报告</button>
+        <button class="btn btn-secondary" id="settingsBtn">设置</button>
+      </div>
+    </div>
+
+    <script src="popup.ts" type="module"></script>
+  </body>
+</html>
