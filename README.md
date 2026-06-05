@@ -1,203 +1,288 @@
-# AttentionBudget - Attention Budget Manager / 注意力预算管理器
+# AttentionBudget — 看见你的注意力，才能管理它
 
-Track every minute of your attention like bookkeeping. Gentle reminders instead of forced blocking — your focus, your choice.
+<p align="center">
+  <img src="docs/hero-full.png" alt="Focus Dashboard" width="100%">
+</p>
 
-像会计记账一样追踪每一分钟注意力，用柔性引导而非强制屏蔽帮助你专注。
+**像会计记账一样追踪每一分钟注意力，用量化数据 + 柔性引导，让你主动选择专注。**
 
----
-
-## Features / 功能特性
-
-- **Real-time Attention Tracking / 实时注意力追踪**: Automatically tracks tab switching and calculates attention cost. / 自动追踪标签页切换，计算注意力消耗。
-- **Budget Visualization / 预算可视化**: Daily attention budget displayed in real-time, remaining time at a glance. / 每日注意力预算实时显示，剩余时间一目了然。
-- **Gentle Intervention / 柔性干预**: Shows a friendly reminder before visiting distracting sites — you always keep the final say. / 访问分心网站前显示温馨提醒，保留用户选择权。
-- **Focus Statistics / 专注统计**: Records focus sessions to help you discover your best working patterns. / 记录专注会话，发现个人最佳工作模式。
-- **Full Privacy / 完全隐私**: All data stored locally. No account required. Works out of the box. / 所有数据存储在本地，无需账号，开箱即用。
+[![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## Prerequisites / 前置依赖
+## 🎯 为什么市面上没有类似产品？
 
-### ActivityWatch
+市面上所有「专注工具」都在做同一件事：**替你决定什么时候该专注，然后屏蔽你**。
 
-This extension requires [ActivityWatch](https://github.com/ActivityWatch/activitywatch) to be installed and running in the background.
+| 工具 | 做了什么 | 问题 |
+|------|---------|------|
+| RescueTime | 后台统计时间去向 | 只看不干预，事后诸葛亮 |
+| StayFocusd | 强制屏蔽网站 | 粗暴，"我要用的时候就看不了" |
+| Forest | 种树计时 | 移动端为主，浏览器里形同虚设 |
+| 番茄钟类 | 25 分钟倒计时 | 一刀切，不管你是否真的在专注 |
 
-本插件需要先安装并运行 [ActivityWatch](https://github.com/ActivityWatch/activitywatch)。
+**AttentionBudget 做了一件没人做的事：量化你的注意力消耗，然后让你自己决定。**
 
-**Why / 为什么需要**: ActivityWatch is an open-source time tracker that records which windows and applications you use. AttentionBudget reads this data to understand your actual attention patterns, instead of guessing from browser tabs alone. / ActivityWatch 是一个开源的时间追踪工具，记录你使用了哪些窗口和应用。AttentionBudget 通过读取它的数据来了解你真实的注意力模式，而不是仅靠浏览器标签页来猜测。
+它不屏蔽任何网站。它告诉你——"你刚才连续切了 8 次窗口，今天的分心分已经到了 73。"你看完这个数字，自己就减少了无意义切换。
 
-**Install / 安装**: Download from [activitywatch.net](https://activitywatch.net/) or `brew install activitywatch` on macOS.
+<p align="center">
+  <img src="docs/kpi-row.png" alt="分心程度分" width="80%">
+</p>
 
----
-
-## Installation (for Humans) / 安装指引（给人看）
-
-1. **Install ActivityWatch** / **安装 ActivityWatch**: See prerequisites above. / 见上方前置依赖。
-
-2. **Clone the repo** / **克隆仓库**:
-
-   ```bash
-   git clone https://github.com/ouxxyy/Attention.git
-   cd Attention
-   ```
-
-3. **Install dependencies** / **安装依赖**:
-
-   ```bash
-   npm install
-   ```
-
-4. **Build the extension** / **构建扩展**:
-
-   ```bash
-   npm run build
-   ```
-
-5. **Load in Chrome** / **在 Chrome 中加载**:
-   - Open `chrome://extensions/` / 打开 `chrome://extensions/`
-   - Enable "Developer mode" / 开启「开发者模式」
-   - Click "Load unpacked" / 点击「加载已解压的扩展程序」
-   - Select the `dist` folder / 选择 `dist` 目录
+> 💡 **「知道自己被量化了」本身就是最强的行为干预。** 这跟记账让你少花钱是一个道理——不是 App 阻止了你，是你看到数字后自己选择了不花。
 
 ---
 
-## Installation (for AI Agents) / 安装指引（给 AI 看）
+## 🧠 为什么有效？
 
-> Structured format optimized for AI parsing. / 结构化格式，便于 AI 解析。
+### 1. 切换成本比你想象的大得多
 
-```yaml
-# AttentionBudget Setup Steps
-project:
-  name: attention-budget
-  repo: https://github.com/ouxxyy/Attention.git
-  type: chrome-extension-mv3
+研究反复验证：**每次任务切换后，需要约 23 分钟才能完全恢复专注状态。**
 
-prerequisites:
-  - name: ActivityWatch
-    url: https://github.com/ActivityWatch/activitywatch
-    reason: Reads window/application time-tracking data
-    install:
-      macos: brew install activitywatch
-      linux: Download from https://activitywatch.net/
-      windows: Download from https://activitywatch.net/
-    verify: curl -s http://localhost:5600/api/0/info
+你在 Codex 里写代码 → 看了一眼微信 → 切回来。你以为只花了 30 秒。但你的大脑花了 23 分钟才重新进入流畅状态。一天切 20 次 = 460 分钟就此消失。
 
-setup:
-  - action: clone
-    command: git clone https://github.com/ouxxyy/Attention.git && cd Attention
+AttentionBudget 把这个成本**实时算出来**给你看。
 
-  - action: install_deps
-    command: npm install
-    expected: exit 0, node_modules/ created
+### 2. 量化反馈 = 行为改变
 
-  - action: build
-    command: npm run build
-    expected: exit 0, dist/ created with manifest.json
+「我感觉今天很专注」和「今天我专注了 187 分钟，分心了 63 分钟」是两种完全不同的认知。后者是不可辩驳的。
 
-  - action: load_extension
-    description: Load dist/ folder as unpacked extension at chrome://extensions/
-    requires: Developer mode enabled
+注意力 → 可量化的数字 → 客观反馈 → 行为调整。不需要意志力，只需要看见。
 
-  - action: verify
-    description: Open extension popup, verify connection to ActivityWatch at localhost:5600
-```
+### 3. 柔性引导 > 强制屏蔽
+
+强制屏蔽会引发**心理逆反**——越不让你看，你越想看。而且你可能真的需要临时查点东西。
+
+柔性引导：弹窗告诉你切换成本 + 今日剩余注意力，按钮是「继续当前任务」和「仍然切换」。你永远保留选择权。但知道代价后，大多数时候你选择了留下。
+
+### 4. 心流检测不是猜的，是算出来的
+
+市面上没有一款工具能告诉你**「今天你有几段真正的心流时间」**。
+
+AttentionBudget 的心流检测算法：
+
+- 连续在同一「主要事情」上停留 ≥ 25 分钟 → 一段心流
+- 中间被打断 ≤ 2 分钟且之后立刻回到同一件事 → 容忍（是同事问问题，不是你真的分心了）
+- 中间离开 > 3 分钟 → 截断，心流结束
+
+这是一套从 ActivityWatch **桌面级真实行为数据**推导出的算法，不是番茄钟式的计时器。
+
+<p align="center">
+  <img src="docs/flow-highlight.png" alt="心流时间段" width="80%">
+</p>
+
+### 5. 你不止想知道「分心了」，还想知道「从什么事分心」
+
+AttentionBudget 的切换时间线记录**最近 20 次**从一件事换到另一件事，精确到「从编码换到了微信」「从文档换到了 Twitter」。你知道的不只是数字，还有**分心的方向**。
+
+<p align="center">
+  <img src="docs/switch-timeline.png" alt="切换时间线" width="80%">
+</p>
 
 ---
 
-## Project Structure / 项目结构
+## ✨ 核心功能
+
+### 🤖 分心程度分
+
+一个 **0-100 分**的综合指标，用加权算法合成四个维度：
 
 ```
-src/
-├── background/          # Service Worker / 后台服务
-│   └── background.ts    # Core tracking logic / 核心追踪逻辑
-├── content/             # Content Scripts / 内容脚本
-│   ├── content.ts       # Intervention popup logic / 干预弹窗逻辑
-│   └── content.css      # Popup styles / 弹窗样式
-├── popup/               # Extension Popup / 插件弹出窗口
-│   ├── popup.html       # UI interface / UI 界面
-│   └── popup.ts         # Interaction logic / 交互逻辑
-├── options/             # Settings Page / 设置页面
-│   ├── options.html
-│   └── options.ts
-├── dashboard/           # Dashboard Page / 仪表盘页面
-│   ├── dashboard.html
-│   └── dashboard.ts
-├── lib/                 # Utilities / 工具库
-│   ├── constants.ts     # Constants / 常量定义
-│   └── utils.ts         # Utility functions / 工具函数
-├── types/               # Type Definitions / 类型定义
-│   └── index.ts
-├── icons/               # Icon Assets / 图标资源
-└── manifest.json        # Extension Config / 扩展配置
+energyWasteScore = 
+  0.35 × 频繁切换分 +
+  0.25 × 短停留分 +
+  0.25 × 偏离主线分 +
+  0.15 × 恢复成本分
 ```
 
+- **频繁切换分**：15 分钟窗口内切换 ≥ 6 次，每多一个窗口 + 25 分
+- **短停留分**：在某件事上停留 ≤ 2 分钟的时间占比
+- **偏离主线分**：不属于「我的主要事情」的时间占比
+- **恢复成本分**：估算的注意力恢复成本（切换次数 × 1.5 分钟）
+
+> 分数越高 = 越分心。低分是好事。
+
+### 📊 心流时间段追踪
+
+自动识别今天的每段「心流时间」——连续在同一件事上超过 25 分钟。会标注容忍的小插曲和 AFK 空隙。
+
+### 📋 我的主要事情
+
+你可以用**关键词规则**告诉系统你的「主要事情」是什么。比如：
+
+```
+编码: VS Code, Codex, GitHub, opencode
+写作: 文档, 公众号, Notion
+阅读: 文章, 论文, Kindle
+```
+
+系统会把命中的多个工具/网页自动合并为同一件事。比如 Codex 切到 VS Code？算法判断：同一件事，没分心。
+
+<p align="center">
+  <img src="docs/keyword-config.png" alt="主要事情关键词配置" width="80%">
+</p>
+
+### 📈 7 天趋势
+
+每天的分心分、专注时长、心流段数、切换次数，全部记录。一张表格看一周的注意力和情绪变化。
+
+<p align="center">
+  <img src="docs/trends-table.png" alt="7天趋势" width="80%">
+</p>
+
+### ⭐ 日评分
+
+每天给自己打一个 1-5 分的主观评分，可附带备注。把客观数据和主观感受放在一起看，发现规律。
+
+### 🌓 自动深色/浅色模式
+
+跟随系统 `prefers-color-scheme`，不需要手动切换。
+
+### 🔔 浏览器通知
+
+检测到频繁切换时，浏览器弹出桌面通知提醒。可配置冷却时间。
+
 ---
 
-## Core Concepts / 核心概念
+## 🛠 安装
 
-### Attention Budget / 注意力预算
+### 前置条件：安装 ActivityWatch
 
-- Default daily budget: 480 minutes (8 hours) / 默认每日预算: 480 分钟 (8 小时)
-- Switch cost per interruption: 23 minutes (research-backed) / 每次切换成本: 23 分钟 (基于研究数据)
-- Warning triggered when remaining budget < 20% / 当剩余预算 < 20% 时显示警告
+AttentionBudget 依赖 [ActivityWatch](https://github.com/ActivityWatch/activitywatch) 采集桌面窗口和应用使用数据。
 
-### Switch Cost / 切换成本
-
-Research shows it takes ~23 minutes to fully regain focus after a task switch. This extension applies this as the attention cost for each interruption.
-
-研究表明，每次任务切换后需要约 23 分钟才能完全恢复专注状态。本插件将此作为每次切换的注意力成本。
-
-### Focus Sessions / 专注会话
-
-Spending ≥ 25 minutes continuously on the same tab counts as one focus session.
-
-连续在同一个标签页停留 ≥ 25 分钟，计为一次专注会话。
-
----
-
-## Settings / 设置选项
-
-- **Daily Attention Budget / 每日注意力预算**: Adjust based on your actual working hours. / 根据实际工作时长调整。
-- **Switch Cost / 切换成本**: Customize attention cost per switch. / 可自定义每次切换的注意力消耗。
-- **Intervention Mode / 干预模式**: All hours / Focus hours only. / 所有时段 / 仅专注时段。
-- **Distracting Site List / 分心网站列表**: Customize which sites trigger intervention. / 自定义需要干预的网站。
-
----
-
-## Development / 开发指引
+**为什么需要 ActivityWatch**：浏览器插件只能看到浏览器里的标签页。你用 VS Code 写代码、用 iTerm 跑命令、用 Figma 画图——这些才是大头。ActivityWatch 记录所有窗口，AttentionBudget 负责分析。
 
 ```bash
-# Dev mode (hot reload) / 开发模式 (热重载)
+# macOS
+brew install activitywatch
+
+# 其他平台
+# 从 https://activitywatch.net/ 下载
+```
+
+安装后启动 ActivityWatch，确保它正在录制数据。访问 `http://localhost:5600` 验证。
+
+### 安装 Focus Dashboard
+
+```bash
+# 克隆
+git clone https://github.com/ouxxyy/Attention.git
+cd Attention/focus
+
+# 安装依赖
+npm install
+
+# 启动（同时启动后端 + 前端）
 npm run dev
+```
 
-# Production build / 构建
-npm run build
+浏览器打开 `http://localhost:5173`，即可看到仪表盘。
 
-# Type check / 类型检查
-npm run lint
+> Node >= 18  |  后端端口: 8787  |  前端端口: 5173
+
+---
+
+## 📁 项目结构
+
+```
+Attention/
+├── focus/                      # Focus Dashboard（全栈仪表盘）
+│   ├── server/                 # Express 后端
+│   │   ├── index.ts            # 入口，端口 8787
+│   │   ├── routes.ts           # API 路由
+│   │   ├── activitywatch.ts    # ActivityWatch API 客户端
+│   │   ├── storage.ts          # 数据读写 + 校验
+│   │   └── summary.ts          # 日汇总 + 趋势构建
+│   ├── shared/                 # 前后端共享
+│   │   ├── metrics.ts          # ⭐ 核心指标计算（分心分 + 心流 + 切换）
+│   │   ├── normalize.ts        # 事件归一化（心跳展开、web叠加、去重、合并）
+│   │   ├── schema.ts           # JSON 校验
+│   │   ├── types.ts            # 类型定义
+│   │   └── defaults.ts         # 默认配置 + 空评分
+│   ├── client/                 # Vite + React 18 前端
+│   │   └── src/
+│   │       ├── App.tsx         # 单页仪表盘
+│   │       └── api.ts          # 前端 API 封装
+│   ├── data/                   # 持久化目录
+│   │   ├── config.json         # 运行时配置
+│   │   └── ratings.json        # 每日主观评分
+│   └── docs/                   # 截图
+└── extension/                  # Chrome 扩展（开发中）
 ```
 
 ---
 
-## Privacy / 隐私说明
+## 🧮 API 端点
 
-- All data stored locally via Chrome Storage. / 所有数据完全存储在本地 (Chrome Storage)。
-- No data collected to any cloud. / 不收集任何用户数据到云端。
-- No account registration required. / 不需要账号注册。
-- One-click clear all data. / 支持一键清除所有数据。
-
----
-
-## Tech Stack / 技术栈
-
-- Chrome Extension Manifest V3
-- TypeScript
-- Vite + @crxjs/vite-plugin
-- Chrome Storage API
-- IndexedDB (via idb)
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/health` | ActivityWatch 连接状态 + bucket 列表 |
+| GET | `/api/buckets` | 发现并分类 bucket 列表 |
+| GET | `/api/events?date=YYYY-MM-DD` | 当天原始事件 |
+| GET | `/api/summary?date=YYYY-MM-DD` | 当天汇总（指标 + 心流 + 时间线） |
+| GET | `/api/trends?days=N&end=YYYY-MM-DD` | 多日趋势（默认 7 天） |
+| GET | `/api/config` | 读取配置 |
+| PUT | `/api/config` | 更新配置 |
+| GET | `/api/ratings` | 读取全部评分 |
+| PUT | `/api/ratings/:date` | 写入某日评分（1-5 分 + 备注） |
 
 ---
 
-## License / 许可证
+## 🧪 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| 前端框架 | React 18 + TypeScript |
+| 后端框架 | Express + TypeScript |
+| 构建工具 | Vite |
+| 测试框架 | Vitest |
+| 数据采集源 | ActivityWatch（本地） |
+| 数据存储 | 本地文件系统（`data/` 目录） |
+| 通知 | Web Notification API |
+
+---
+
+## 🔒 隐私说明
+
+- ✅ 所有数据**完全存储在本地**，不上传任何服务器
+- ✅ 不需要注册账号，不需要登录
+- ✅ 依赖 ActivityWatch 的本地数据采集，数据归你所有
+- ✅ 评分、配置等个人数据存储在 `data/` 目录，可在 `.gitignore` 中排除
+- ✅ 支持一键清除所有数据
+
+**此项目不会，也永远不会收集你的浏览数据到云端。**
+
+---
+
+## 📮 联系我们 & 反馈
+
+扫码关注公众号，获取更多注意力管理方法和产品更新：
+
+<p align="center">
+  <img src="docs/qrcode.jpg" alt="公众号二维码" width="200">
+</p>
+
+> 有任何功能建议、Bug 反馈，或想分享你的专注心得，欢迎通过公众号联系我们。
+>
+> 也欢迎提交 Issue 和 PR！
+
+---
+
+## 📄 License
 
 MIT License
+
+---
+
+## 🌟 路线图
+
+- [ ] Chrome 扩展版本（轻量版，浏览器内直接使用）
+- [ ] 智能分心网站识别（自动识别时间黑洞）
+- [ ] 周报 / 月报导出
+- [ ] 跨日专注对比分析
+- [ ] 集成 Google Calendar，关联日程与注意力数据
+
+---
+
+**AttentionBudget** —— 不是让你戒掉分心，是让你看见自己的注意力去哪了。剩下的，你自己决定。
+
