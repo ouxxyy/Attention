@@ -548,6 +548,62 @@ button {
   white-space: nowrap;
 }
 
+.flow-progress {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--surface-muted);
+}
+
+.flow-progress__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 720;
+}
+
+.flow-progress__head span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.flow-progress__meter {
+  height: 8px;
+  margin-top: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+.flow-progress__meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f59e0b 0%, #f97316 100%);
+}
+
+.flow-progress__text,
+.flow-progress__meta {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.flow-progress__text {
+  color: var(--ink);
+}
+
+.flow-progress__meta {
+  color: var(--muted);
+}
+
 .trends-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;

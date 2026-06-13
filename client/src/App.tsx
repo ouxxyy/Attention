@@ -708,6 +708,8 @@ function FlowBlocksCard({ summary, config }: { summary: DailySummaryResponse; co
   const flowMinMinutes = config?.thresholds.flowMinMinutes ?? 25;
   const shortSwitchMaxMinutes = config?.thresholds.shortSwitchMaxMinutes ?? 2;
   const afkGraceMinutes = config?.thresholds.afkGraceMinutes ?? 3;
+  const closestFlow = findClosestFlowCandidate(summary.switchTimeline, flowMinMinutes, shortSwitchMaxMinutes, afkGraceMinutes);
+  const flowMinSec = flowMinMinutes * 60;
 
   return (
     <section className="card">
@@ -719,10 +721,32 @@ function FlowBlocksCard({ summary, config }: { summary: DailySummaryResponse; co
         </div>
       </div>
       {flowBlocks.length === 0 ? (
-        <p className="muted">
-          今天还没找到一段足够长的连续工作。当前规则要求同一件事累计至少 {flowMinMinutes} 分钟，
-          中间可以有 {shortSwitchMaxMinutes} 分钟以内的小插曲；离开电脑超过 {afkGraceMinutes} 分钟会重新计算。
-        </p>
+        <>
+          <p className="muted">
+            今天还没找到一段足够长的连续工作。当前规则要求同一件事累计至少 {flowMinMinutes} 分钟，
+            中间可以有 {shortSwitchMaxMinutes} 分钟以内的小插曲；离开电脑超过 {afkGraceMinutes} 分钟会重新计算。
+          </p>
+          {closestFlow && (
+            <div className="flow-progress">
+              <div className="flow-progress__head">
+                <span>最接近心流</span>
+                <span>{displayTimelineName(closestFlow.taskGroupKey, '', closestFlow.taskKey)}</span>
+              </div>
+              <div className="flow-progress__meter" aria-hidden="true">
+                <span style={{ width: `${Math.max(4, Math.min(100, (closestFlow.activeDurationSec / flowMinSec) * 100))}%` }} />
+              </div>
+              <p className="flow-progress__text">
+                {closestFlow.activeDurationSec >= flowMinSec
+                  ? `连续累计 ${formatDuration(closestFlow.activeDurationSec)}，但中间有 ${closestFlow.toleratedInterruptions} 次小插曲，超过当前允许的 ${closestFlow.allowedInterruptions} 次，所以这段还没算进心流。`
+                  : `连续累计 ${formatDuration(closestFlow.activeDurationSec)}，距离进入心流还差 ${Math.max(1, Math.ceil((flowMinSec - closestFlow.activeDurationSec) / 60))} 分钟。`}
+              </p>
+              <p className="flow-progress__meta">
+                {formatTime(closestFlow.start)} – {formatTime(closestFlow.end)}
+                {closestFlow.toleratedInterruptions > 0 ? ` · 中间有 ${closestFlow.toleratedInterruptions} 次小插曲` : ' · 期间没有小插曲'}
+              </p>
+            </div>
+          )}
+        </>
       ) : (
         <ul className="flow-list">
           {flowBlocks.map((block, i) => (
@@ -739,6 +763,113 @@ function FlowBlocksCard({ summary, config }: { summary: DailySummaryResponse; co
       )}
     </section>
   );
+}
+
+interface ClosestFlowCandidate {
+  taskKey: string;
+  taskGroupKey: string;
+  start: string;
+  end: string;
+  activeDurationSec: number;
+  toleratedInterruptions: number;
+  allowedInterruptions: number;
+}
+
+function findClosestFlowCandidate(
+  timeline: DailySummaryResponse['switchTimeline'],
+  flowMinMinutes: number,
+  shortSwitchMaxMinutes: number,
+  afkGraceMinutes: number
+): ClosestFlowCandidate | null {
+  if (timeline.length === 0) return null;
+
+  const flowMinSec = flowMinMinutes * 60;
+  const shortInterruptionMaxSec = shortSwitchMaxMinutes * 60;
+  const afkGraceSec = afkGraceMinutes * 60;
+  const flowInternalGapMaxSec = 60;
+
+  let best: ClosestFlowCandidate | null = null;
+
+  for (let cursor = 0; cursor < timeline.length; cursor += 1) {
+    const base = timeline[cursor];
+    let activeDurationSec = base.durationSec;
+    let toleratedInterruptions = 0;
+    let lastEndMs = Date.parse(base.end);
+    let end = base.end;
+    let scan = cursor + 1;
+
+    while (scan < timeline.length) {
+      const next = timeline[scan];
+      const gapSec = (Date.parse(next.start) - lastEndMs) / 1000;
+      if (gapSec > afkGraceSec) break;
+
+      if (next.taskGroupKey === base.taskGroupKey) {
+        if (gapSec > flowInternalGapMaxSec) {
+          toleratedInterruptions += 1;
+        }
+        activeDurationSec += next.durationSec;
+        lastEndMs = Date.parse(next.end);
+        end = next.end;
+        scan += 1;
+        continue;
+      }
+
+      const nextSameTask = timeline[scan + 1];
+      const interruptionIsTolerable = Boolean(
+        nextSameTask &&
+          next.durationSec <= shortInterruptionMaxSec &&
+          nextSameTask.taskGroupKey === base.taskGroupKey &&
+          (Date.parse(nextSameTask.start) - Date.parse(next.end)) / 1000 <= flowInternalGapMaxSec
+      );
+
+      if (!interruptionIsTolerable) break;
+
+      toleratedInterruptions += 1;
+      lastEndMs = Date.parse(next.end);
+      end = next.end;
+      scan += 1;
+    }
+
+    const allowedInterruptions = Math.floor(activeDurationSec / flowMinSec);
+    const candidate: ClosestFlowCandidate = {
+      taskKey: base.taskKey,
+      taskGroupKey: base.taskGroupKey,
+      start: base.start,
+      end,
+      activeDurationSec,
+      toleratedInterruptions,
+      allowedInterruptions
+    };
+
+    if (!best) {
+      best = candidate;
+      continue;
+    }
+
+    const candidateMeetsDuration = candidate.activeDurationSec >= flowMinSec;
+    const bestMeetsDuration = best.activeDurationSec >= flowMinSec;
+    const candidateValid = candidateMeetsDuration && candidate.toleratedInterruptions <= candidate.allowedInterruptions;
+    const bestValid = bestMeetsDuration && best.toleratedInterruptions <= best.allowedInterruptions;
+
+    if (candidateValid && !bestValid) {
+      best = candidate;
+      continue;
+    }
+    if (candidateValid === bestValid) {
+      if (candidate.activeDurationSec > best.activeDurationSec) {
+        best = candidate;
+        continue;
+      }
+      if (
+        candidate.activeDurationSec === best.activeDurationSec &&
+        candidate.toleratedInterruptions < best.toleratedInterruptions
+      ) {
+        best = candidate;
+      }
+    }
+  }
+
+  return best;
 }
 
 function FrequentSwitchCard({ summary }: { summary: DailySummaryResponse }) {
