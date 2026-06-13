@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from '../defaults';
-import { analysisTaskKey, computeMetrics } from '../metrics';
+import { analysisTaskKey, computeMetrics, flowGroupKey } from '../metrics';
 import type { Config, TaskSegment } from '../types';
 
 const baseTime = Date.parse('2026-05-31T00:00:00.000Z');
@@ -227,6 +227,28 @@ describe('computeMetrics', () => {
     const result = computeMetrics([browserInternalSegment], config);
     expect(result.metrics.mainTaskTimeSec).toBe(600);
     expect(result.metrics.primaryMainTaskLabel).toBe('编程');
+  });
+
+  it('does not merge different rule labels into one flow group just because they reuse a generic keyword', () => {
+    const config = configWithKeywords([
+      { label: '自媒体', patterns: ['shared-tool', 'douyin'], match: 'substring', priority: 100 },
+      { label: '编程', patterns: ['shared-tool', 'codex'], match: 'substring', priority: 90 }
+    ]);
+
+    expect(
+      flowGroupKey(
+        segment(0, 60, 'Tabbit:douyin board', { app: 'Tabbit', title: 'douyin board', source: 'web' }),
+        config,
+        new Map()
+      )
+    ).toBe('主任务:自媒体');
+    expect(
+      flowGroupKey(
+        segment(60, 60, 'Codex:codex panel', { app: 'Codex', title: 'codex panel', source: 'web' }),
+        config,
+        new Map()
+      )
+    ).toBe('主任务:编程');
   });
 
   it('keeps one flow block when same-task segments are separated by a gap within afkGraceMinutes', () => {

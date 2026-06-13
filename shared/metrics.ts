@@ -2,72 +2,13 @@ import { defaultConfig } from './defaults.js';
 import type { Config, KeywordRule, TaskSegment } from './types.js';
 
 /**
- * 构建关键词亲和组：若两个规则共享至少一个关键词 pattern，则视为同一"亲和组"。
- * 返回 Map<ruleLabel, canonicalGroupKey>，其中 canonicalGroupKey 是组内字典序最小的 label。
- * 用于流检测和切换计数——同一亲和组内的切换不算「换到别的事」。
+ * 历史兼容保留。
+ * 早期版本会把“共享任一关键词”的规则合并为亲和组，但这在用户给多条规则复用通用关键词时，
+ * 会把本应不同的事情（如“自媒体/编程/工作”）错误地揉成同一组。
+ * 现在 flow/switch 直接按最终命中的规则标签分组，不再使用这个映射做跨规则合并。
  */
 export function buildKeywordAffinity(config: Config): Map<string, string> {
-  const rules = config.mainTaskKeywords;
-  // pattern → 包含该 pattern 的 rule labels
-  const patternToLabels = new Map<string, Set<string>>();
-  for (const rule of rules) {
-    const lowerLabel = rule.label;
-    for (const pattern of rule.patterns) {
-      const lower = pattern.toLowerCase();
-      let labels = patternToLabels.get(lower);
-      if (!labels) {
-        labels = new Set();
-        patternToLabels.set(lower, labels);
-      }
-      labels.add(lowerLabel);
-    }
-  }
-
-  // Union-Find 合并共享 pattern 的 rule labels
-  const parent = new Map<string, string>();
-  const find = (x: string): string => {
-    const p = parent.get(x);
-    if (!p || p === x) return x;
-    const root = find(p);
-    parent.set(x, root);
-    return root;
-  };
-  const union = (a: string, b: string) => {
-    const ra = find(a);
-    const rb = find(b);
-    if (ra !== rb) parent.set(ra, rb);
-  };
-
-  for (const rule of rules) {
-    const label = rule.label;
-    if (!parent.has(label)) parent.set(label, label);
-  }
-
-  for (const labels of patternToLabels.values()) {
-    const arr = [...labels];
-    for (let i = 1; i < arr.length; i++) {
-      union(arr[0], arr[i]);
-    }
-  }
-
-  // 每组取字典序最小的 label 作为 canonical key
-  const groupRoots = new Map<string, string>();
-  const affinity = new Map<string, string>();
-  for (const rule of rules) {
-    const label = rule.label;
-    const root = find(label);
-    let canonical = groupRoots.get(root);
-    if (!canonical || label < canonical) {
-      canonical = label;
-      groupRoots.set(root, canonical);
-    }
-  }
-  for (const rule of rules) {
-    const label = rule.label;
-    affinity.set(label, groupRoots.get(find(label)) ?? label);
-  }
-
-  return affinity;
+  return new Map(config.mainTaskKeywords.map(rule => [rule.label, rule.label]));
 }
 
 /**
@@ -81,7 +22,7 @@ export function flowGroupKey(
 ): string {
   const rule = findHighestPriorityRule(segment, config.mainTaskKeywords);
   if (!rule) return segment.taskKey;
-  return `主任务:${affinity.get(rule.label) ?? rule.label}`;
+  return `主任务:${rule.label}`;
 }
 
 const SWITCH_GAP_MAX_SEC = 300;
