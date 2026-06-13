@@ -153,6 +153,7 @@ export interface ConfigResponse {
     afkGraceMinutes: number;
   };
   mainTaskKeywords: KeywordRule[];
+  sharedKeywords: string[];
   notifications: NotificationConfig;
   internalUrlProtocols: string[];
 }

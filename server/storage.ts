@@ -18,23 +18,71 @@ export class StorageReadError extends Error {
   }
 }
 
+function normalizeKeywordList(values: string[] | undefined): string[] {
+  return [
+    ...new Set(
+      (values ?? [])
+        .flatMap(value => value.split(/[,，、]/))
+        .map(value => value.trim())
+        .filter(Boolean)
+    )
+  ];
+}
+
+function collectDuplicatedPatterns(mainTaskKeywords: Config['mainTaskKeywords']): string[] {
+  const counts = new Map<string, number>();
+
+  for (const rule of mainTaskKeywords) {
+    for (const pattern of normalizeKeywordList(rule.patterns)) {
+      const lower = pattern.toLowerCase();
+      counts.set(lower, (counts.get(lower) ?? 0) + 1);
+    }
+  }
+
+  const duplicated = new Set(
+    [...counts.entries()].filter(([, count]) => count > 1).map(([pattern]) => pattern)
+  );
+
+  if (duplicated.size === 0) {
+    return [];
+  }
+
+  const ordered: string[] = [];
+  for (const rule of mainTaskKeywords) {
+    for (const pattern of normalizeKeywordList(rule.patterns)) {
+      if (duplicated.has(pattern.toLowerCase()) && !ordered.some(item => item.toLowerCase() === pattern.toLowerCase())) {
+        ordered.push(pattern);
+      }
+    }
+  }
+
+  return ordered;
+}
+
 /**
- * 规范化配置：将 mainTaskKeywords 中含中文逗号/顿号的 pattern 拆分为多个独立 pattern，
- * 防止用户用中文逗号输入关键词时被合并成一个无法匹配的长字符串。
- * 去重、去空白、去空串。
+ * 规范化配置：
+ * 1. 将关键词中含中文逗号/顿号的内容拆分为多个独立词；
+ * 2. 将重复出现在多条规则中的词自动收敛到 sharedKeywords；
+ * 3. 规则本身只保留“真正决定归属”的专属词，避免共享工具词把不同主要工作硬判成切换。
  */
 function normalizeConfig(config: Config): Config {
+  const normalizedRules = config.mainTaskKeywords.map(rule => ({
+    ...rule,
+    patterns: normalizeKeywordList(rule.patterns)
+  }));
+  const sharedKeywords = normalizeKeywordList([
+    ...(config.sharedKeywords ?? []),
+    ...collectDuplicatedPatterns(normalizedRules)
+  ]);
+  const sharedKeywordSet = new Set(sharedKeywords.map(pattern => pattern.toLowerCase()));
+
   return {
     ...config,
-    mainTaskKeywords: config.mainTaskKeywords.map(rule => ({
+    mainTaskKeywords: normalizedRules.map(rule => ({
       ...rule,
-      patterns: [...new Set(
-        rule.patterns
-          .flatMap(pattern => pattern.split(/[,，、]/))
-          .map(s => s.trim())
-          .filter(Boolean)
-      )]
-    }))
+      patterns: rule.patterns.filter(pattern => !sharedKeywordSet.has(pattern.toLowerCase()))
+    })),
+    sharedKeywords
   };
 }
 

@@ -15,6 +15,7 @@ export const defaultConfig: Config = {
     { label: '编码', patterns: ['代码', 'IDE', 'VS Code', 'cursor', 'Codex', 'opencode', 'GitHub'], match: 'substring', priority: 90 },
     { label: '阅读', patterns: ['阅读', '看书', '文章'], match: 'substring', priority: 80 }
   ],
+  sharedKeywords: [],
   notifications: {
     enabled: false,
     cooldownMinutes: 15

@@ -58,6 +58,7 @@ export interface Config {
   activityWatchBaseUrl: string;
   thresholds: Thresholds;
   mainTaskKeywords: KeywordRule[];
+  sharedKeywords: string[];
   notifications: NotificationConfig;
   internalUrlProtocols: string[];
 }

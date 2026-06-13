@@ -44,6 +44,7 @@
       "priority": 80
     }
   ],
+  "sharedKeywords": [],
   "notifications": {
     "enabled": false,
     "cooldownMinutes": 15

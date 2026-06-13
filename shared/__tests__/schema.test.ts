@@ -48,6 +48,18 @@ describe('config schema', () => {
     expect(result.valid).toBe(false);
   });
 
+  it('accepts sharedKeywords when they are strings', () => {
+    const config = { ...defaultConfig, sharedKeywords: ['New Tab', 'GitHub'] };
+    const result = validateConfig(config);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects non-string sharedKeywords entries', () => {
+    const config = { ...defaultConfig, sharedKeywords: ['New Tab', 123] };
+    const result = validateConfig(config);
+    expect(result.valid).toBe(false);
+  });
+
   it('rejects invalid notifications.enabled type', () => {
     const config = { ...defaultConfig, notifications: { ...defaultConfig.notifications, enabled: 'yes' } };
     const result = validateConfig(config);

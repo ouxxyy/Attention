@@ -69,6 +69,19 @@ export function validateConfig(input: unknown): ValidationResult<Config> {
     }
   }
 
+  // sharedKeywords
+  if (obj.sharedKeywords !== undefined) {
+    if (!Array.isArray(obj.sharedKeywords)) {
+      errors.push('sharedKeywords 必须是数组');
+    } else {
+      for (let i = 0; i < obj.sharedKeywords.length; i++) {
+        if (typeof obj.sharedKeywords[i] !== 'string') {
+          errors.push(`sharedKeywords[${i}] 必须是字符串`);
+        }
+      }
+    }
+  }
+
   // notifications
   if (!obj.notifications || typeof obj.notifications !== 'object') {
     errors.push('notifications 必须是对象');

@@ -36,8 +36,11 @@ function segmentAt(baseMs: number, offsetSec: number, durationSec: number, taskK
   };
 }
 
-function configWithKeywords(mainTaskKeywords: Config['mainTaskKeywords']): Config {
-  return { ...defaultConfig, mainTaskKeywords };
+function configWithKeywords(
+  mainTaskKeywords: Config['mainTaskKeywords'],
+  sharedKeywords: Config['sharedKeywords'] = []
+): Config {
+  return { ...defaultConfig, mainTaskKeywords, sharedKeywords };
 }
 
 function expectFiniteNumbers(value: unknown): void {
@@ -249,6 +252,68 @@ describe('computeMetrics', () => {
         new Map()
       )
     ).toBe('主任务:编程');
+  });
+
+  it('lets shared keywords follow the surrounding main-task context without creating a switch', () => {
+    const config = configWithKeywords(
+      [
+        { label: '自媒体', patterns: ['douyin'], match: 'substring', priority: 100 },
+        { label: '编程', patterns: ['focus-repo', 'codex'], match: 'substring', priority: 90 }
+      ],
+      ['New Tab', 'GitHub']
+    );
+    const result = computeMetrics(
+      [
+        segment(0, 900, 'focus-repo:implement feature', { app: 'VS Code', title: 'focus-repo' }),
+        segment(900, 120, '浏览器内部操作:chrome', { app: 'chrome', title: 'New Tab', source: 'web' }),
+        segment(1020, 900, 'Codex:review focus-repo', { app: 'Codex', title: 'Codex review' })
+      ],
+      config
+    );
+
+    expect(result.metrics.mainTaskTimeSec).toBe(1920);
+    expect(result.metrics.meaningfulSwitchCount).toBe(0);
+    expect(result.flowBlocks).toHaveLength(1);
+    expect(result.flowBlocks[0]).toMatchObject({
+      taskKey: '主任务:编程',
+      activeDurationSec: 1920,
+      segmentCount: 3
+    });
+  });
+
+  it('counts one switch when a shared keyword sits between two different direct-rule segments', () => {
+    const config = configWithKeywords(
+      [
+        { label: '编程', patterns: ['focus-repo'], match: 'substring', priority: 100 },
+        { label: '自媒体', patterns: ['douyin'], match: 'substring', priority: 90 }
+      ],
+      ['New Tab']
+    );
+    const result = computeMetrics(
+      [
+        segment(0, 900, 'focus-repo:implement feature', { app: 'VS Code', title: 'focus-repo' }),
+        segment(900, 60, '浏览器内部操作:chrome', { app: 'chrome', title: 'New Tab', source: 'web' }),
+        segment(960, 900, 'douyin:publish plan', { app: 'chrome', title: 'douyin publish', source: 'web' })
+      ],
+      config
+    );
+
+    expect(result.metrics.rawSwitchCount).toBe(2);
+    expect(result.metrics.meaningfulSwitchCount).toBe(1);
+  });
+
+  it('does not directly classify a shared-only segment without context', () => {
+    const sharedOnlySegment = segment(0, 600, '浏览器内部操作:chrome', {
+      app: 'chrome',
+      title: 'New Tab',
+      source: 'web'
+    });
+    const config = configWithKeywords(
+      [{ label: '编程', patterns: ['focus-repo'], match: 'substring', priority: 100 }],
+      ['New Tab']
+    );
+
+    expect(analysisTaskKey(sharedOnlySegment, config)).toBe('浏览器内部操作:chrome');
   });
 
   it('keeps one flow block when same-task segments are separated by a gap within afkGraceMinutes', () => {

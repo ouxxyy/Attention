@@ -20,7 +20,7 @@ export function flowGroupKey(
   config: Config,
   affinity: Map<string, string>
 ): string {
-  const rule = findHighestPriorityRule(segment, config.mainTaskKeywords);
+  const rule = findHighestPriorityRule(segment, config.mainTaskKeywords, config.sharedKeywords);
   if (!rule) return segment.taskKey;
   return `主任务:${rule.label}`;
 }
@@ -80,10 +80,10 @@ interface TimedSegment extends TaskSegment {
 
 export function computeMetrics(segments: TaskSegment[], config: Config = defaultConfig): MetricsResult {
   const orderedSegments = normalizeMetricSegments(segments);
-  const affinity = buildKeywordAffinity(config);
+  const resolvedTaskKeys = resolveMainTaskKeys(orderedSegments, config);
   const activeTimeSec = orderedSegments.reduce((sum, segment) => sum + segment.durationSec, 0);
   const rawSwitches = collectSwitches(orderedSegments, segment => segment.taskKey);
-  const taskSwitches = collectSwitches(orderedSegments, segment => flowGroupKey(segment, config, affinity));
+  const taskSwitches = collectSwitchesByKeys(orderedSegments, resolvedTaskKeys);
   const rawSwitchCount = rawSwitches.length;
   const meaningfulSwitches = taskSwitches.filter(isMeaningfulSwitch);
   const meaningfulSwitchCount = meaningfulSwitches.length;
@@ -92,7 +92,7 @@ export function computeMetrics(segments: TaskSegment[], config: Config = default
     .filter(segment => segment.durationSec <= config.thresholds.shortSwitchMaxMinutes * 60)
     .reduce((sum, segment) => sum + segment.durationSec, 0);
   const frequentWindows = countFrequentWindows(meaningfulSwitches.map(switchEvent => switchEvent.atMs), config);
-  const mainTaskStats = calculateMainTaskStats(orderedSegments, config);
+  const mainTaskStats = calculateMainTaskStats(orderedSegments, resolvedTaskKeys, config);
   const mainTaskTimeSec = mainTaskStats.mainTaskTimeSec;
   const deviationRatio = activeTimeSec === 0 ? 0 : safeFinite(1 - mainTaskTimeSec / activeTimeSec);
   const hasMainTaskSignal = mainTaskTimeSec > 0;
@@ -133,7 +133,7 @@ export function computeMetrics(segments: TaskSegment[], config: Config = default
       scoringVersion: 'v2',
       scoringNotes
     },
-    flowBlocks: detectFlowBlocks(orderedSegments, config, affinity),
+    flowBlocks: detectFlowBlocks(orderedSegments, resolvedTaskKeys, config),
     confidence,
     warnings: confidence === 'low' && activeTimeSec > 0 ? [LOW_URL_CONFIDENCE_WARNING] : []
   };
@@ -155,6 +155,21 @@ interface SwitchEvent {
   atMs: number;
   previous: TimedSegment;
   current: TimedSegment;
+}
+
+function collectSwitchesByKeys(segments: TimedSegment[], keys: string[]): SwitchEvent[] {
+  const switches: SwitchEvent[] = [];
+
+  for (let index = 1; index < segments.length; index += 1) {
+    const previous = segments[index - 1];
+    const current = segments[index];
+    const gapSec = (current.startMs - previous.endMs) / 1000;
+    if (keys[index] !== keys[index - 1] && gapSec <= SWITCH_GAP_MAX_SEC) {
+      switches.push({ atMs: current.startMs, previous, current });
+    }
+  }
+
+  return switches;
 }
 
 function collectSwitches(segments: TimedSegment[], keyForSegment: (segment: TimedSegment) => string): SwitchEvent[] {
@@ -207,13 +222,21 @@ function countFrequentWindows(switchTimes: number[], config: Config): number {
 
 function calculateMainTaskStats(
   segments: TimedSegment[],
+  resolvedTaskKeys: string[],
   config: Config
 ): { mainTaskTimeSec: number; primaryMainTaskLabel?: string } {
   let mainTaskTimeSec = 0;
   let primaryRule: KeywordRule | undefined;
 
-  for (const segment of segments) {
-    const rule = findHighestPriorityRule(segment, config.mainTaskKeywords);
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index];
+    const resolvedTaskKey = resolvedTaskKeys[index];
+    if (!resolvedTaskKey.startsWith('主任务:')) {
+      continue;
+    }
+
+    const label = resolvedTaskKey.replace(/^主任务:/, '');
+    const rule = config.mainTaskKeywords.find(item => item.label === label);
     if (!rule) {
       continue;
     }
@@ -240,12 +263,30 @@ function keywordMatchText(target: KeywordMatchTarget): string {
     .toLowerCase();
 }
 
-export function findHighestPriorityRule(target: KeywordMatchTarget, rules: KeywordRule[]): KeywordRule | undefined {
+function buildSharedKeywordSet(sharedKeywords: string[]): Set<string> {
+  return new Set(sharedKeywords.map(keyword => keyword.toLowerCase()));
+}
+
+function matchesSharedKeyword(target: KeywordMatchTarget, sharedKeywords: string[]): boolean {
+  if (sharedKeywords.length === 0) return false;
   const haystack = keywordMatchText(target);
+  return sharedKeywords.some(keyword => haystack.includes(keyword.toLowerCase()));
+}
+
+export function findHighestPriorityRule(
+  target: KeywordMatchTarget,
+  rules: KeywordRule[],
+  sharedKeywords: string[] = []
+): KeywordRule | undefined {
+  const haystack = keywordMatchText(target);
+  const sharedKeywordSet = buildSharedKeywordSet(sharedKeywords);
   let bestRule: KeywordRule | undefined;
 
   for (const rule of rules) {
-    const matches = rule.patterns.some(pattern => haystack.includes(pattern.toLowerCase()));
+    const matches = rule.patterns.some(pattern => {
+      const lower = pattern.toLowerCase();
+      return !sharedKeywordSet.has(lower) && haystack.includes(lower);
+    });
     if (matches && (!bestRule || rule.priority > bestRule.priority)) {
       bestRule = rule;
     }
@@ -254,13 +295,62 @@ export function findHighestPriorityRule(target: KeywordMatchTarget, rules: Keywo
   return bestRule;
 }
 
-export function matchesKeywordRules(target: KeywordMatchTarget, rules: KeywordRule[]): boolean {
-  return Boolean(findHighestPriorityRule(target, rules));
+export function matchesKeywordRules(
+  target: KeywordMatchTarget,
+  rules: KeywordRule[],
+  sharedKeywords: string[] = []
+): boolean {
+  return Boolean(findHighestPriorityRule(target, rules, sharedKeywords)) || matchesSharedKeyword(target, sharedKeywords);
 }
 
 export function analysisTaskKey(segment: Pick<TaskSegment, 'taskKey' | 'app' | 'title' | 'domain' | 'url'>, config: Config): string {
-  const rule = findHighestPriorityRule(segment, config.mainTaskKeywords);
+  const rule = findHighestPriorityRule(segment, config.mainTaskKeywords, config.sharedKeywords);
   return rule ? `主任务:${rule.label}` : segment.taskKey;
+}
+
+export function resolveMainTaskLabels<T extends Pick<TaskSegment, 'taskKey' | 'app' | 'title' | 'domain' | 'url'>>(
+  segments: T[],
+  config: Config
+): Array<string | undefined> {
+  const directMatches = segments.map(segment => findHighestPriorityRule(segment, config.mainTaskKeywords, config.sharedKeywords)?.label);
+  const sharedOnlyMatches = segments.map(
+    (segment, index) => !directMatches[index] && matchesSharedKeyword(segment, config.sharedKeywords)
+  );
+  const resolved: Array<string | undefined> = [];
+
+  for (let index = 0; index < directMatches.length; index += 1) {
+    const directMatch = directMatches[index];
+    if (directMatch) {
+      resolved[index] = directMatch;
+      continue;
+    }
+
+    if (sharedOnlyMatches[index]) {
+      resolved[index] = resolved[index - 1] ?? nextDirectRuleLabel(directMatches, index + 1);
+      continue;
+    }
+
+    resolved[index] = undefined;
+  }
+
+  return resolved;
+}
+
+export function resolveMainTaskKeys<T extends Pick<TaskSegment, 'taskKey' | 'app' | 'title' | 'domain' | 'url'>>(
+  segments: T[],
+  config: Config
+): string[] {
+  const labels = resolveMainTaskLabels(segments, config);
+  return labels.map((label, index) => (label ? `主任务:${label}` : segments[index].taskKey));
+}
+
+function nextDirectRuleLabel(directMatches: Array<string | undefined>, startIndex: number): string | undefined {
+  for (let index = startIndex; index < directMatches.length; index += 1) {
+    if (directMatches[index]) {
+      return directMatches[index];
+    }
+  }
+  return undefined;
 }
 
 function calculateComponentScores(input: {
@@ -281,7 +371,7 @@ function calculateComponentScores(input: {
   };
 }
 
-function detectFlowBlocks(segments: TimedSegment[], config: Config, affinity: Map<string, string>): FlowBlock[] {
+function detectFlowBlocks(segments: TimedSegment[], resolvedTaskKeys: string[], config: Config): FlowBlock[] {
   const flowMinSec = config.thresholds.flowMinMinutes * 60;
   const shortInterruptionMaxSec = config.thresholds.shortSwitchMaxMinutes * 60;
   const afkGraceSec = config.thresholds.afkGraceMinutes * 60;
@@ -290,7 +380,7 @@ function detectFlowBlocks(segments: TimedSegment[], config: Config, affinity: Ma
 
   while (cursor < segments.length) {
     const baseSegment = segments[cursor];
-    const baseTaskKey = flowGroupKey(baseSegment, config, affinity);
+    const baseTaskKey = resolvedTaskKeys[cursor];
     let activeDurationSec = baseSegment.durationSec;
     let toleratedInterruptions = 0;
     let sameTaskSegmentCount = 1;
@@ -305,7 +395,7 @@ function detectFlowBlocks(segments: TimedSegment[], config: Config, affinity: Ma
         break;
       }
 
-      if (flowGroupKey(nextSegment, config, affinity) === baseTaskKey) {
+      if (resolvedTaskKeys[scan] === baseTaskKey) {
         if (gapSec > FLOW_INTERNAL_GAP_MAX_SEC) {
           toleratedInterruptions += 1;
         }
@@ -317,7 +407,7 @@ function detectFlowBlocks(segments: TimedSegment[], config: Config, affinity: Ma
         continue;
       }
 
-      if (!isTolerableInterruption(segments, scan, baseTaskKey, shortInterruptionMaxSec, config, affinity)) {
+      if (!isTolerableInterruption(segments, resolvedTaskKeys, scan, baseTaskKey, shortInterruptionMaxSec)) {
         break;
       }
 
@@ -348,18 +438,17 @@ function detectFlowBlocks(segments: TimedSegment[], config: Config, affinity: Ma
 
 function isTolerableInterruption(
   segments: TimedSegment[],
+  resolvedTaskKeys: string[],
   interruptionIndex: number,
   taskKey: string,
-  shortInterruptionMaxSec: number,
-  config: Config,
-  affinity: Map<string, string>
+  shortInterruptionMaxSec: number
 ): boolean {
   const interruption = segments[interruptionIndex];
   const nextSameTask = segments[interruptionIndex + 1];
   if (
     !nextSameTask ||
     interruption.durationSec > shortInterruptionMaxSec ||
-    flowGroupKey(nextSameTask, config, affinity) !== taskKey
+    resolvedTaskKeys[interruptionIndex + 1] !== taskKey
   ) {
     return false;
   }

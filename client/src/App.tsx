@@ -186,9 +186,9 @@ function App() {
     }
   };
 
-  const handleSaveKeywords = async (keywords: KeywordRule[]): Promise<boolean> => {
+  const handleSaveKeywords = async (keywords: KeywordRule[], sharedKeywords: string[]): Promise<boolean> => {
     if (!state.config) return false;
-    const next: ConfigResponse = { ...state.config, mainTaskKeywords: keywords };
+    const next: ConfigResponse = { ...state.config, mainTaskKeywords: keywords, sharedKeywords };
     try {
       const saved = await putConfig(next);
       setState(prev => ({ ...prev, config: saved }));
@@ -295,6 +295,7 @@ function App() {
             {config && (
               <KeywordConfigEditor
                 keywords={config.mainTaskKeywords}
+                sharedKeywords={config.sharedKeywords}
                 onSave={handleSaveKeywords}
               />
             )}
@@ -444,16 +445,20 @@ function NotificationToggle({ enabled, permission, onToggle, cooldownMinutes, wi
   );
 }
 
-function KeywordConfigEditor({ keywords, onSave }: {
+function KeywordConfigEditor({ keywords, sharedKeywords, onSave }: {
   keywords: KeywordRule[];
-  onSave: (keywords: KeywordRule[]) => Promise<boolean>;
+  sharedKeywords: string[];
+  onSave: (keywords: KeywordRule[], sharedKeywords: string[]) => Promise<boolean>;
 }) {
   const [items, setItems] = useState<KeywordRule[]>(keywords);
+  const [sharedItems, setSharedItems] = useState<string[]>(sharedKeywords);
   const [status, setStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   useEffect(() => {
     setItems(keywords);
-  }, [keywords]);
+    setSharedItems(sharedKeywords);
+    setStatus('idle');
+  }, [keywords, sharedKeywords]);
 
   const updateItem = (index: number, field: 'label' | 'patterns' | 'priority', value: string | number) => {
     setItems(prev => {
@@ -485,17 +490,23 @@ function KeywordConfigEditor({ keywords, onSave }: {
     setItems(prev => prev.filter((_item, itemIndex) => itemIndex !== index));
   };
 
+  const updateSharedItems = (value: string) => {
+    setSharedItems(value.split(/[,，、]/).map(item => item.trim()).filter(Boolean));
+  };
+
   const handleSave = async () => {
     if (validationMessage) return;
     setStatus('saving');
-    const ok = await onSave(items);
+    const ok = await onSave(items, sharedItems);
     setStatus(ok ? 'saved' : 'error');
     if (ok) {
       setTimeout(() => setStatus(prev => prev === 'saved' ? 'idle' : prev), 2000);
     }
   };
 
-  const hasChanges = JSON.stringify(items) !== JSON.stringify(keywords);
+  const hasChanges =
+    JSON.stringify(items) !== JSON.stringify(keywords) ||
+    JSON.stringify(sharedItems) !== JSON.stringify(sharedKeywords);
   const validationMessage = getKeywordValidationMessage(items);
 
   return (
@@ -511,15 +522,15 @@ function KeywordConfigEditor({ keywords, onSave }: {
       <div className="keyword-guide">
         <div>
           <span className="guide-step">1</span>
-          <p>写一件正事，例如“编码”。</p>
+          <p>先给每件主要事情写“专属词”，例如“编码”里放代码库名、项目名。</p>
         </div>
         <div>
           <span className="guide-step">2</span>
-          <p>把相关工具和网页名写进去，例如“Codex, opencode, VS Code”。</p>
+          <p>像 “New Tab / ChatGPT / GitHub / Codex” 这类多件事都会用到的词，放到下面“共享工具词”。</p>
         </div>
         <div>
           <span className="guide-step">3</span>
-          <p>如果一条活动同时命中多件事，排序数字大的优先。</p>
+          <p>共享工具词本身不会触发切换，它只会跟随前后上下文归到同一件事。</p>
         </div>
       </div>
 
@@ -541,7 +552,7 @@ function KeywordConfigEditor({ keywords, onSave }: {
               />
             </label>
             <label className="field-label">
-              包含这些字就算这件事
+              包含这些专属词就算这件事
             </label>
             <div className="tag-editor">
               {kw.patterns.map((pattern, pi) => (
@@ -589,10 +600,57 @@ function KeywordConfigEditor({ keywords, onSave }: {
               />
             </label>
             <div className="keyword-item-meta">
-              包含任一个词就算命中；数字越大越优先。
+              这里只放真正能区分这件事的词；数字越大越优先。
             </div>
           </div>
         ))}
+      </div>
+      <div className="keyword-item">
+        <div className="keyword-item-head">
+          <span>共享工具词</span>
+        </div>
+        <label className="field-label">
+          这些词可以同时属于多件事
+        </label>
+        <div className="tag-editor">
+          {sharedItems.map((pattern, index) => (
+            <span key={index} className="tag-chip">
+              {pattern}
+              <button
+                type="button"
+                className="tag-chip__x"
+                onClick={() => {
+                  const next = [...sharedItems];
+                  next.splice(index, 1);
+                  updateSharedItems(next.join(','));
+                }}
+                aria-label={`删除 ${pattern}`}
+              >×</button>
+            </span>
+          ))}
+          <input
+            className="tag-editor__input"
+            placeholder={sharedItems.length === 0 ? '输入共享词，回车添加' : '继续添加…'}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ',') {
+                e.preventDefault();
+                const value = (e.target as HTMLInputElement).value.trim();
+                if (value) {
+                  const next = [...sharedItems, value];
+                  updateSharedItems(next.join(','));
+                  (e.target as HTMLInputElement).value = '';
+                }
+              } else if (e.key === 'Backspace' && (e.target as HTMLInputElement).value === '' && sharedItems.length > 0) {
+                const next = [...sharedItems];
+                next.pop();
+                updateSharedItems(next.join(','));
+              }
+            }}
+          />
+        </div>
+        <div className="keyword-item-meta">
+          它们不会单独把你判成“切到另一件事”，只会跟随相邻上下文归类。
+        </div>
       </div>
       <div className="keyword-actions">
         <button

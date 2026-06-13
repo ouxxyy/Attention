@@ -1,9 +1,7 @@
 import {
-  analysisTaskKey,
-  buildKeywordAffinity,
   computeMetrics,
-  flowGroupKey,
   matchesKeywordRules,
+  resolveMainTaskKeys,
   type MetricsSummary
 } from '../shared/metrics.js';
 import { normalizeEvents, type NormalizationEvent } from '../shared/normalize.js';
@@ -102,9 +100,9 @@ export function buildDailySummary(dayEvents: DayEventsResponse, config: Config):
   const segments = normalizeEvents(input, config);
   const metricsResult = computeMetrics(segments, config);
   const dataSufficiency = buildDataSufficiency(rawEventCount, segments.length, metricsResult.metrics.activeTimeSec);
-  const topTasks = aggregateTasks(segments, config);
+  const resolvedTaskKeys = resolveMainTaskKeys(orderedSegments(segments), config);
+  const topTasks = aggregateTasks(segments, resolvedTaskKeys);
   const rawTopTasks = aggregateRawTasks(segments);
-  const affinity = buildKeywordAffinity(config);
   const response: DailySummaryResponse = {
     date: dayEvents.date,
     range: dayEvents.range,
@@ -115,8 +113,10 @@ export function buildDailySummary(dayEvents: DayEventsResponse, config: Config):
     confidence: metricsResult.confidence,
     warnings: uniqueStrings([...dayEvents.warnings, ...metricsResult.warnings]),
     topTasks,
-    switchTimeline: buildSwitchTimeline(segments, config, affinity),
-    unclassifiedActivityCandidates: rawTopTasks.filter(task => !matchesKeywordRules(task, config.mainTaskKeywords))
+    switchTimeline: buildSwitchTimeline(segments, resolvedTaskKeys),
+    unclassifiedActivityCandidates: rawTopTasks.filter(
+      task => !matchesKeywordRules(task, config.mainTaskKeywords, config.sharedKeywords)
+    )
   };
 
   return sanitizeFinite(response);
@@ -222,13 +222,14 @@ function buildDataSufficiency(rawEventCount: number, normalizedSegmentCount: num
   };
 }
 
-function aggregateTasks(segments: TaskSegment[], config: Config): TaskDuration[] {
+function aggregateTasks(segments: TaskSegment[], resolvedTaskKeys: string[]): TaskDuration[] {
   const byTask = new Map<string, TaskDuration>();
   const appsByTask = new Map<string, Set<string>>();
   /** 收集每个 taskKey 下各原始 app:title 的累计时长 */
   const itemsByTask = new Map<string, Map<string, MergedItem>>();
-  for (const segment of orderedSegments(segments)) {
-    const taskKey = analysisTaskKey(segment, config);
+  const ordered = orderedSegments(segments);
+  for (const [index, segment] of ordered.entries()) {
+    const taskKey = resolvedTaskKeys[index] ?? segment.taskKey;
     const isRuleGroup = taskKey.startsWith('主任务:');
     const existing = byTask.get(taskKey);
     if (existing) {
@@ -318,13 +319,13 @@ function aggregateRawTasks(segments: TaskSegment[]): TaskDuration[] {
   );
 }
 
-function buildSwitchTimeline(segments: TaskSegment[], config: Config, affinity: Map<string, string>): SwitchTimelineEntry[] {
+function buildSwitchTimeline(segments: TaskSegment[], resolvedTaskKeys: string[]): SwitchTimelineEntry[] {
   const ordered = orderedSegments(segments);
   return ordered.map((segment, index) => {
     const previous = ordered[index - 1];
     const gapSec = previous ? Math.max(0, (Date.parse(segment.start) - Date.parse(previous.end)) / 1000) : 0;
-    const currentGroupKey = flowGroupKey(segment, config, affinity);
-    const previousGroupKey = previous ? flowGroupKey(previous, config, affinity) : undefined;
+    const currentGroupKey = resolvedTaskKeys[index] ?? segment.taskKey;
+    const previousGroupKey = previous ? resolvedTaskKeys[index - 1] ?? previous.taskKey : undefined;
     const isMeaningfulSwitch = Boolean(
       previous &&
         previousGroupKey !== currentGroupKey &&
