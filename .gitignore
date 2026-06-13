@@ -1,25 +1,15 @@
-# Dependencies
 node_modules/
-
-# Build output
 dist/
 
-# System files
 .DS_Store
-Thumbs.db
+.omo/
+.playwright-mcp/
+_knowledge_base/
 
-# Logs
-*.log
+data/*.json
+!data/*.example.json
+shared/fixtures/*.json
+
 npm-debug.log*
-
-# Editor
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Environment
-.env
-.env.local
-.env.*.local
+yarn-debug.log*
+yarn-error.log*
