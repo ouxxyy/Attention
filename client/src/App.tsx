@@ -192,8 +192,8 @@ function App() {
     try {
       const saved = await putConfig(next);
       setState(prev => ({ ...prev, config: saved }));
-      // 保存后立即按新规则重新拉取当日汇总，否则指标仍显示旧分类
-      loadData(state.selectedDate);
+      // 保存后等待按新规则重新拉取当日汇总，避免 UI 先显示“已保存”但列表仍是旧分类
+      await loadData(state.selectedDate);
       return true;
     } catch {
       return false;
