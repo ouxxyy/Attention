@@ -281,6 +281,33 @@ describe('computeMetrics', () => {
     });
   });
 
+  it('keeps a shared tool in context when its title also matches another main-task rule', () => {
+    const config = configWithKeywords(
+      [
+        { label: '自媒体', patterns: ['wechatpost'], match: 'substring', priority: 100 },
+        { label: '编程', patterns: ['skill'], match: 'substring', priority: 90 }
+      ],
+      ['Terminal']
+    );
+    const result = computeMetrics(
+      [
+        segment(0, 900, 'wechatpost:draft article', { app: 'MarkText', title: 'wechatpost draft' }),
+        segment(900, 5, 'Terminal:cover skill plan', { app: 'Terminal', title: 'cover skill plan' }),
+        segment(905, 5, 'Terminal', { app: 'Terminal', title: 'Terminal' }),
+        segment(910, 900, 'wechatpost:continue article', { app: 'MarkText', title: 'wechatpost draft' })
+      ],
+      config
+    );
+
+    expect(result.metrics.meaningfulSwitchCount).toBe(0);
+    expect(result.flowBlocks).toHaveLength(1);
+    expect(result.flowBlocks[0]).toMatchObject({
+      taskKey: '主任务:自媒体',
+      activeDurationSec: 1810,
+      segmentCount: 4
+    });
+  });
+
   it('counts one switch when a shared keyword sits between two different direct-rule segments', () => {
     const config = configWithKeywords(
       [

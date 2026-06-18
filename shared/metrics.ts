@@ -312,9 +312,11 @@ export function resolveMainTaskLabels<T extends Pick<TaskSegment, 'taskKey' | 'a
   segments: T[],
   config: Config
 ): Array<string | undefined> {
-  const directMatches = segments.map(segment => findHighestPriorityRule(segment, config.mainTaskKeywords, config.sharedKeywords)?.label);
-  const sharedOnlyMatches = segments.map(
-    (segment, index) => !directMatches[index] && matchesSharedKeyword(segment, config.sharedKeywords)
+  const sharedMatches = segments.map(segment => matchesSharedKeyword(segment, config.sharedKeywords));
+  const directMatches = segments.map((segment, index) =>
+    sharedMatches[index]
+      ? undefined
+      : findHighestPriorityRule(segment, config.mainTaskKeywords, config.sharedKeywords)?.label
   );
   const resolved: Array<string | undefined> = [];
 
@@ -325,7 +327,7 @@ export function resolveMainTaskLabels<T extends Pick<TaskSegment, 'taskKey' | 'a
       continue;
     }
 
-    if (sharedOnlyMatches[index]) {
+    if (sharedMatches[index]) {
       resolved[index] = resolved[index - 1] ?? nextDirectRuleLabel(directMatches, index + 1);
       continue;
     }
