@@ -154,6 +154,13 @@ describe('computeMetrics', () => {
     expect(result.metrics.activeTimeSec).toBe(600);
   });
 
+  it('does not warn when URL coverage is low but window activity is available', () => {
+    const result = computeMetrics([segment(0, 600, 'Code:metrics.ts')], defaultConfig);
+
+    expect(result.confidence).toBe('low');
+    expect(result.warnings).toEqual([]);
+  });
+
   it('counts all short stays and scores them by segment count', () => {
     const result = computeMetrics(
       [segment(0, 30, 'Task:A'), segment(30, 120, 'Task:B'), segment(150, 90, 'Task:C')],

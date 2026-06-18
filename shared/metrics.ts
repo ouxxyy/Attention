@@ -28,7 +28,6 @@ export function flowGroupKey(
 const SWITCH_GAP_MAX_SEC = 300;
 const FLOW_INTERNAL_GAP_MAX_SEC = 60;
 const MEANINGFUL_SWITCH_MIN_SEGMENT_SEC = 15;
-const LOW_URL_CONFIDENCE_WARNING = 'URL 数据不足，已使用窗口标题兜底';
 const MAIN_TASK_UNMATCHED_NOTE = '还没认出今天主要在忙什么，所以“不在主要事情里的时间”先不扣分。请在底部添加你的主要事情。';
 
 export interface ComponentScores {
@@ -135,7 +134,7 @@ export function computeMetrics(segments: TaskSegment[], config: Config = default
     },
     flowBlocks: detectFlowBlocks(orderedSegments, resolvedTaskKeys, config),
     confidence,
-    warnings: confidence === 'low' && activeTimeSec > 0 ? [LOW_URL_CONFIDENCE_WARNING] : []
+    warnings: []
   };
 }
 
