@@ -13,3 +13,7 @@ shared/fixtures/*.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# 内部维护文件，不公开
+_hermes_*.md
+cron_daily_focus.py

@@ -1,107 +1,87 @@
-# Focus Dashboard
+# Attention · 本地专注力仪表盘
 
-本地专注力仪表盘。从 ActivityWatch 采集桌面行为数据，计算“有没有换到别的事”“分心程度”“连续专注段”等指标，在网页端呈现每日报告和趋势。
+盯着电脑工作了一天，却说不清时间都花在哪、被打断了几次？Attention 读取 [ActivityWatch](https://activitywatch.net/) 的桌面行为数据，每天给你一份说得清的答案：换到别的事几次、哪些时段真正连续专注、有多少时间花在主要事情之外。数据全部留在本机，不上传任何服务器。
 
-## 前置条件
+![专注力仪表盘首屏](docs/hero.png)
 
-| 服务 | 地址 | 说明 |
-|------|------|------|
-| ActivityWatch | `http://localhost:5600/api/0` | 桌面行为采集，需提前启动 |
-| Express 后端 | `http://localhost:8787` | `npm run server:dev` |
-| Vite 前端 | `http://localhost:5173` | `npm run client:dev`，代理 `/api` 到 8787 |
+左边是当天的分心程度分和四个扣分来源，右边是切换次数的原始计数；下面直接列出检测到的心流时间段和近 7 天趋势。
 
-Node >= 18。
+## 它会怎么做
 
-## 快速启动
+1. ActivityWatch 在后台记录窗口标题、浏览器标签页和离开电脑的时间。
+2. 仪表盘把这些原始事件整理成一段段时间线，去掉抖动和重叠。
+3. 你在「我的主要事情」里定义几件事（比如编码、写作、阅读）和各自的关键词，同类工具自动归到同一件事。
+4. 页面给出当天报告：分心程度分、心流时间段、主要任务分布、最近切换记录，以及可打分的今日评分。
+5. 数据和配置都存在本地 `data/` 目录，纯本机运行。
+
+## 效果一览
+
+**分心从哪来** —— 四个子分分别对应「换到别的事」「很快离开」「不属于主要事情」「切回来成本」，每个都能展开看到原始计数。
+
+![分心程度分与切换计数](docs/score-cards.png)
+
+**心流时间段** —— 同一件事连续累计 25 分钟以上就会标记出来，中间 2 分钟以内的小插曲可以容忍；近 7 天趋势直接对比每天的专注状况。
+
+![心流时间段与近 7 天趋势](docs/flow-trends.png)
+
+**时间花在哪** —— 按你定义的「主要事情」合并同类工具后排序，浏览器的走神记录也会单独列出来。
+
+![今天主要在忙什么](docs/tasks.png)
+
+**切换记录** —— 每次从一件事跳到另一件事都有时间戳和来源，分心爆发一眼可见。
+
+![最近换到别的事](docs/switches.png)
+
+**没认出来的活动** —— 命中不了任何规则的活动会集中在这里，提醒你补一条规则。
+
+![还没认出来的活动](docs/unknown.png)
+
+**每日主观评分** —— 给当天打分并留一句话备注，趋势表里直接以星星展示，和客观数据放在一起回看。
+
+![今日评分](docs/rating.png)
+
+## 快速开始
+
+前置条件：
+
+- Node >= 18
+- [ActivityWatch](https://activitywatch.net/) 已在本机运行（默认 `http://localhost:5600`），且至少有 `currentwindow` 和 `afkstatus` 两类 watcher；装了浏览器扩展（`web.tab.current`）后网页数据会更完整
 
 ```bash
 npm install
 npm run dev
 ```
 
-`npm run dev` 用 concurrently 同时拉起后端和前端，打开 `http://localhost:5173` 即可。
+打开 `http://localhost:5173` 即可。`npm run dev` 会同时启动后端（端口 8787）和前端开发服务器。
 
-## npm scripts
+第一次使用先到页面底部「我的主要事情」里配置几件事和关键词——分类是所有指标的基础，这一步做完报告才有意义。
 
-| 命令 | 作用 |
-|------|------|
-| `npm run dev` | concurrently 启动 server + client |
-| `npm run server:dev` | tsx watch 启动后端（端口 8787） |
-| `npm run client:dev` | Vite 开发服务器（端口 5173） |
-| `npm test` | vitest watch 模式 |
-| `npm run test:run` | vitest 单次运行 |
+![我的主要事情规则编辑器](docs/rules.png)
 
-## 项目结构
+## 数据与隐私
 
-```
-server/
-  index.ts          Express 入口，端口 8787
-  routes.ts         API 路由定义
-  activitywatch.ts  ActivityWatch API 客户端
-  storage.ts        data/ 目录读写，校验
-  summary.ts        日汇总 & 趋势构建
-shared/
-  metrics.ts        核心指标计算
-  normalize.ts      事件归一化（心跳展开、web 叠加、去重、合并）
-  schema.ts         JSON 校验
-  types.ts          类型定义
-  defaults.ts       默认配置 & 空评分
-client/
-  src/App.tsx       单页仪表盘（React）
-  src/api.ts        前端 API 封装
-data/
-  config.json       运行时配置（阈值、关键词、通知）
-  ratings.json      每日主观评分
-```
+- 全部数据留在本机：行为数据在 ActivityWatch 里，配置和评分在本仓库的 `data/` 目录（已加入 `.gitignore`，不会提交）。
+- 没有账号、没有云端、没有遥测。
+- 界面跟随系统浅色/深色模式。
 
-## API 端点
+## 故障排除
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/health` | ActivityWatch 连接状态 + bucket 列表 |
-| GET | `/api/buckets` | 发现并按类型分组 bucket |
-| GET | `/api/events?date=YYYY-MM-DD` | 当天原始事件 |
-| GET | `/api/summary?date=YYYY-MM-DD` | 当天汇总（指标 + 连续专注段 + 时间线） |
-| GET | `/api/trends?days=N&end=YYYY-MM-DD` | 多日趋势（默认 days=7） |
-| GET | `/api/config` | 读取配置 |
-| PUT | `/api/config` | 更新配置 |
-| GET | `/api/ratings` | 读取全部评分 |
-| PUT | `/api/ratings/:date` | 写入某日评分（1-5 分 + 可选备注） |
+ActivityWatch 没启动时，页面顶部会出现明确的错误提示，修复后点「刷新」即可：
 
-## 持久化
+![ActivityWatch 不可用时的提示](docs/failure-state.png)
 
-配置和评分存放在 `data/` 目录：
+| 现象 | 检查项 |
+|------|--------|
+| 顶部提示数据加载失败 | 确认 ActivityWatch 已启动，访问 http://localhost:5600/api/0/info 应返回 JSON |
+| 当天数据为空 | 确认 ActivityWatch 的 window/afk watcher 正在录制 |
+| 数据完整度低 | 浏览器扩展没装或没生效，只有窗口标题可用 |
+| 分心程度分为 0 | 当天活跃时间不足或没有切换行为，属正常 |
+| 端口被占用 | 后端默认 8787，前端默认 5173 |
 
-- `data/config.json` — 阈值、关键词规则、通知开关。首次启动自动生成默认值。
-- `data/ratings.json` — 每日评分，格式 `{ ratings: { "YYYY-MM-DD": { score, note, updatedAt } } }`。
+## 指标口径（参考）
 
-两个文件都经过 schema 校验，PUT 写入失败会返回 400 + 具体错误信息。
-
-`data/*.json` 会包含本机 ActivityWatch hostname 和个人评分备注，默认已在 `.gitignore` 中排除。开源或部署时可参考 `data/config.example.json` 与 `data/ratings.example.json`。
-
-## 界面主题
-
-前端支持系统级浅色/深色模式（`prefers-color-scheme`），不需要额外配置。
-
-## 核心指标公式
-
-### switchCount（窗口/网页跳动记录）与 meaningfulSwitchCount（换到另一件事）
-
-遍历排序后的时间片段，相邻片段 taskKey 不同且间隔 <= 300 秒时计一次切换。
-
-`rawSwitchCount` 保留上述原始窗口/网页跳动记录；`meaningfulSwitchCount` 会先按“我的主要事情”聚合，再过滤任一侧时长低于 15 秒的小抖动，作为分心分的主要输入。例如 Codex、opencode、VS Code 都命中“编码”时，它们之间的切换仍算同一件事。
-
-### shortStayCount（很快离开的记录数）
-
-时间片段持续时长 <= `shortSwitchMaxMinutes * 60`（默认 120 秒）的片段个数。
-
-### frequentWindows（频繁切换窗口数）
-
-滑动窗口：窗口宽度 = `frequentSwitchWindowMinutes`（默认 15 分钟），窗口内切换次数 >= `frequentSwitchCount`（默认 6）时计一个频繁窗口。
-
-### energyWasteScore（分心程度分）
-
-0-100 分，加权合成：
+<details>
+<summary>分心程度分（0-100，越低越好）</summary>
 
 ```
 energyWasteScore = round(
@@ -112,33 +92,26 @@ energyWasteScore = round(
 )
 ```
 
-各子分计算：
+| 子分 | 口径 |
+|------|------|
+| frequentSwitchScore | min(100, 频繁切换窗口数 × 25 + 换到另一件事次数 × 2) |
+| shortStayScore | 很快离开的时间占比（片段 ≤ 2 分钟记为短停留） |
+| deviationScore | 不属于任何「主要事情」的时间占比 |
+| recoveryScore | min(100, 换到另一件事次数 × 1.5 分钟 ÷ 60) |
 
-| 子分 | 公式 | 含义 |
-|------|------|------|
-| frequentSwitchScore | min(100, frequentWindows × 25 + meaningfulSwitchCount × 2) | 换到另一件事的影响 |
-| shortStayScore | min(100, shortStayTimeSec × 100 / activeTimeSec) | 很快离开的时间占比 |
-| deviationScore | 有主要事情命中时 round(deviationRatio × 100)，否则 0 并输出 scoringNotes | 不属于“我的主要事情”的时间占比 |
-| recoveryScore | min(100, recoveryCostMin × 100 / 60) | 反复切回来带来的估算成本 |
+「换到另一件事」先按主要事情聚合：Codex、opencode、VS Code 都命中「编码」时，它们之间来回切仍算同一件事；任一侧不足 15 秒的小抖动不计入。
 
-recoveryCostMin = meaningfulSwitchCount × 1.5
+</details>
 
-deviationRatio = 1 - mainTaskTimeSec / activeTimeSec（mainTaskTime 通过“我的主要事情”匹配）
+<details>
+<summary>心流时间段判定</summary>
 
-### flowBlock（连续专注段）
+同一件「主要事情」下，活跃时长 ≥ 25 分钟（`flowMinMinutes`）的连续时段；容忍的打断次数 ≤ floor(活跃时长 ÷ 25)；单次打断 ≤ 2 分钟且之后回到同一件事；离开电脑超过 3 分钟（`afkGraceMinutes`）重新计算。
 
-一段连续的同一任务时段，满足：
-- 活跃时长 >= `flowMinMinutes`（默认 25 分钟）
-- 容忍的打断次数 <= floor(活跃时长 / flowMinMinutes)
-- 同一条“我的主要事情”下的多个应用会合并为同一件事
-- 打断判定：不同事情片段持续 <= `shortSwitchMaxMinutes`（默认 2 分钟），且之后紧接同一件事（间隔 <= 60 秒）
-- AFK 空隙 > `afkGraceMinutes`（默认 3 分钟）直接截断
+</details>
 
-### 数据完整度
-
-基于 web 事件有 URL/domain 的占比：>= 70% 为 high，>= 30% 为 medium，否则 low。
-
-## 默认阈值
+<details>
+<summary>默认阈值与数据假设</summary>
 
 ```json
 {
@@ -150,14 +123,23 @@ deviationRatio = 1 - mainTaskTimeSec / activeTimeSec（mainTaskTime 通过“我
 }
 ```
 
-可在 `data/config.json` 或通过 `PUT /api/config` 修改。
+可在 `data/config.json` 或页面里修改。心跳事件（duration=0）向后推断至下一个事件、最长 120 秒；网页事件与窗口事件重叠 ≥ 50% 时以网页为准；相邻同任务片段间隔 ≤ 60 秒自动合并。完整算法见 [docs/AGGREGATION_ALGORITHM.md](docs/AGGREGATION_ALGORITHM.md)。
 
-## ActivityWatch 数据假设
+</details>
 
-- 需要 `currentwindow`、`web.tab.current`、`afkstatus` 三类 bucket。
-- 心跳事件（duration=0）会向后推断至下一个事件或最长 120 秒。
-- Web 事件优先级高于窗口事件（重叠 >= 50% 时 web 覆盖窗口）。
-- 相邻同 taskKey 片段间隔 <= 60 秒会自动合并。
+## API（开发者）
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/health` | ActivityWatch 连接状态 + bucket 列表 |
+| GET | `/api/summary?date=YYYY-MM-DD` | 当天汇总（指标 + 心流段 + 时间线） |
+| GET | `/api/trends?days=N&end=YYYY-MM-DD` | 多日趋势（默认 7 天） |
+| GET | `/api/events?date=YYYY-MM-DD` | 当天原始事件 |
+| GET / PUT | `/api/config` | 读取 / 更新配置（写入经 schema 校验） |
+| GET | `/api/ratings` | 全部每日评分 |
+| PUT | `/api/ratings/:date` | 写入某日评分（1-5 分 + 备注） |
+
+配置与评分存放在 `data/`：`config.json`（阈值、关键词规则、通知）、`ratings.json`（每日评分）。两者都有 schema 校验，非法写入返回 400 和具体原因。参考 `data/config.example.json` 与 `data/ratings.example.json`。
 
 ## 测试
 
@@ -165,16 +147,19 @@ deviationRatio = 1 - mainTaskTimeSec / activeTimeSec（mainTaskTime 通过“我
 npm run test:run
 ```
 
-测试覆盖归一化、指标计算、schema 校验。位于 `shared/__tests__/`。
+覆盖事件归一化、指标计算和 schema 校验，位于 `shared/__tests__/`。
 
-## 故障排除
+## 作者
 
-| 现象 | 检查项 |
-|------|--------|
-| 仪表盘显示 "ActivityWatch 不可用" | 确认 ActivityWatch 已启动，访问 http://localhost:5600/api/0/info 是否返回 JSON |
-| /api/health 返回 503 | 后端连不上 ActivityWatch，检查端口和防火墙 |
-| 当天数据为空 | 确认 ActivityWatch watcher 正在录制，检查 buckets 页面是否有当日事件 |
-| 数据置信度 low | web watcher 未运行或浏览器插件缺失，仅窗口标题可用 |
-| 分心程度分为 0 | 当天活跃时间不足或无切换行为 |
-| PUT /api/config 返回 400 | 提交的 JSON 不符合 schema，查看返回的 details 字段 |
-| 端口被占用 | 后端默认 8787，前端默认 5173，可在代码中修改 |
+作者全平台同名：**欧八同学**。
+
+- 微信公众号：扫码关注
+- 抖音：[搜索“欧八同学”](https://www.douyin.com/search/%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
+- 小红书：[搜索“欧八同学”](https://www.xiaohongshu.com/search_result?keyword=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
+- X：[搜索“欧八同学”](https://x.com/search?q=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6&src=typed_query)
+
+<p align="center">
+  <img src="assets/wechat-qr.jpg" alt="欧八同学微信公众号二维码" width="260">
+</p>
+
+如果这个项目对你有用，欢迎点个 Star。遇到问题时，提交使用的命令、报错信息和最小复现步骤就够了。
