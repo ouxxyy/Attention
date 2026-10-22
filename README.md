@@ -1,10 +1,22 @@
-# Attention · 本地专注力仪表盘
+# Attention｜ActivityWatch 仪表盘与本地专注力分析
 
 盯着电脑工作了一天，却说不清时间都花在哪、被打断了几次？Attention 读取 [ActivityWatch](https://activitywatch.net/) 的桌面行为数据，每天给你一份说得清的答案：换到别的事几次、哪些时段真正连续专注、有多少时间花在主要事情之外。数据全部留在本机，不上传任何服务器。
 
 ![专注力仪表盘首屏](docs/hero.png)
 
 左边是当天的分心程度分和四个扣分来源，右边是切换次数的原始计数；下面直接列出检测到的心流时间段和近 7 天趋势。
+
+[使用示例](#quick-example) · [开始使用](#quick-start) · [English](#english-overview)
+
+<a id="quick-example"></a>
+
+## 一次使用示例
+
+**设置示例：** 在「我的主要事情」中建立“编码”，把编辑器和相关文档归入同一件事，再查看当天报告。
+
+**输出：** 不同工具可以合并为一项任务，报告列出换到别的事的次数、持续专注时段和近 7 天趋势。具体数值来自你的 ActivityWatch 记录，这里不预设专注成绩。
+
+[启动仪表盘](#quick-start) 前需先运行 ActivityWatch。上方截图和下方 [效果一览](#效果一览) 展示了报告结构。
 
 ## 它会怎么做
 
@@ -39,6 +51,8 @@
 **每日主观评分** —— 给当天打分并留一句话备注，趋势表里直接以星星展示，和客观数据放在一起回看。
 
 ![今日评分](docs/rating.png)
+
+<a id="quick-start"></a>
 
 ## 快速开始
 
@@ -148,6 +162,38 @@ npm run test:run
 ```
 
 覆盖事件归一化、指标计算和 schema 校验，位于 `shared/__tests__/`。
+
+## 常见问题
+
+### 需要先安装 ActivityWatch 吗？
+
+需要。仪表盘读取已有 ActivityWatch 数据，至少需要窗口与离开状态 watcher；浏览器扩展能提供更完整的网页记录。
+
+### 为什么第一次打开分类不准确？
+
+先配置「我的主要事情」及关键词。任务分类是切换、分心与专注统计的基础。
+
+### 会上传窗口标题或浏览记录吗？
+
+项目在本机读取数据，配置和评分也保存在本机；没有账号、云端或遥测。
+
+### 分心程度分是医学或心理诊断吗？
+
+不是。它是按公开口径整理的行为统计，用于回顾时间分配，不用于诊断注意力障碍。
+
+<a id="english-overview"></a>
+
+## English overview
+
+Attention is a local ActivityWatch dashboard for context switching, distraction patterns and sustained focus periods. It groups window and browser activity using your task rules, then shows daily counts and recent trends.
+
+[Quick start](#quick-start) requires Node.js 18+ and an already running ActivityWatch instance. Configure your main tasks before interpreting the metrics. Activity and configuration stay on your computer; the custom metrics are not medical or psychological assessments.
+
+## 相关项目
+
+[欧八同学的 AI Skills 与跳槽涨薪工具合集](https://github.com/ouxxyy/ouba-classmate)，还可以接着使用：
+
+- [在浏览器里设置坐姿提醒](https://github.com/ouxxyy/postapp)
 
 ## 作者
 
