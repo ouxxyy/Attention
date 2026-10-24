@@ -6,6 +6,9 @@
 
 左边是当天的分心程度分和四个扣分来源，右边是切换次数的原始计数；下面直接列出检测到的心流时间段和近 7 天趋势。
 
+> [!TIP]
+> 🎁 扫码关注公众号「欧八同学」，免费领取 AI 案例与 Skill《大厂产品AI经验编程 200 套》→ [去扫码](#author)
+
 [使用示例](#quick-example) · [开始使用](#quick-start) · [English](#english-overview)
 
 <a id="quick-example"></a>
@@ -194,13 +197,16 @@ Attention is a local ActivityWatch dashboard for context switching, distraction 
 [欧八同学的 AI Skills 与跳槽涨薪工具合集](https://github.com/ouxxyy/ouba-classmate)，还可以接着使用：
 
 - [在浏览器里设置坐姿提醒](https://github.com/ouxxyy/postapp)
+- 全部项目与作者主页：[github.com/ouxxyy](https://github.com/ouxxyy)
+
+<a id="author"></a>
 
 ## 作者
 
 作者全平台同名：**欧八同学**。
 
 - 个人主页 / 联系我：[albertou.redboook.cn](https://albertou.redboook.cn/)
-- 微信公众号：扫码关注
+- 微信公众号：扫码关注，免费领取 AI 案例与 Skill《大厂产品AI经验编程 200 套》，免费领取 AI 案例与 Skill《大厂产品AI经验编程 200 套》
 - 抖音：[搜索“欧八同学”](https://www.douyin.com/search/%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
 - 小红书：[搜索“欧八同学”](https://www.xiaohongshu.com/search_result?keyword=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6)
 - X：[搜索“欧八同学”](https://x.com/search?q=%E6%AC%A7%E5%85%AB%E5%90%8C%E5%AD%A6&src=typed_query)
@@ -208,6 +214,8 @@ Attention is a local ActivityWatch dashboard for context switching, distraction 
 <p align="center">
   <img src="assets/wechat-qr.jpg" alt="欧八同学微信公众号二维码" width="260">
 </p>
+
+<p align="center"><sub>扫码关注「欧八同学」，免费领取《大厂产品AI经验编程 200 套》</sub></p>
 
 如果这个项目对你有用，欢迎点个 Star。遇到问题时，提交使用的命令、报错信息和最小复现步骤就够了。
 
