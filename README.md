@@ -1,5 +1,7 @@
 # Attention｜ActivityWatch 仪表盘与本地专注力分析
 
+> 📦 **本项目属于 [ouba-classmate 套件](https://github.com/ouxxyy/ouba-classmate)**：[一行安装全部 Skill](https://github.com/ouxxyy/ouba-classmate#install) · [查看《中文 AI 求职 Skill 公开横评》](https://github.com/ouxxyy/ouba-classmate/tree/main/benchmark)
+
 盯着电脑工作了一天，却说不清时间都花在哪、被打断了几次？Attention 读取 [ActivityWatch](https://activitywatch.net/) 的桌面行为数据，每天给你一份说得清的答案：换到别的事几次、哪些时段真正连续专注、有多少时间花在主要事情之外。数据全部留在本机，不上传任何服务器。
 
 ![专注力仪表盘首屏](docs/hero.png)
