@@ -1,5 +1,20 @@
 # Attention｜ActivityWatch 仪表盘与本地专注力分析
 
+<!-- discovery:start -->
+## ActivityWatch 本地专注力分析与任务切换仪表盘
+
+**ActivityWatch 记录了电脑活动，怎么看一天的任务切换与专注时间？** 读取本机活动记录，按你定义的主要任务分类，展示切换计数、分心来源、持续专注时段与近 7 天趋势。
+
+Local ActivityWatch focus analytics and context-switching dashboard.
+
+**开始使用：** [运行 ActivityWatch 与仪表盘](#quick-start) · [分类设置示例](#quick-example)。
+
+**使用边界：** 需先运行 ActivityWatch 并配置分类规则；行为分数不是心理或医学诊断。
+
+[按任务浏览欧八同学的全部工具](https://github.com/ouxxyy/ouba-classmate#按需求找)；如果本项目有帮助，欢迎收藏当前仓库。
+
+<!-- discovery:end -->
+
 <!-- hero:start -->
 
 <p>
