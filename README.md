@@ -7,12 +7,15 @@
 
 Local ActivityWatch focus analytics and context-switching dashboard.
 
+**30 秒核心结论：** 直连本地 ActivityWatch（5600 端口） · 分析任务切换与近 7 天专注趋势 · 100% 本地运行 0 上传 · MIT 开源 0 元 · 更新于 2026-11-21。
+
+**一键运行 / 收藏：** `git clone https://github.com/ouxxyy/Attention.git && cd Attention && npm install && npm run dev` ｜ `gh api -X PUT /user/starred/ouxxyy/Attention`
+
 **开始使用：** [运行 ActivityWatch 与仪表盘](#quick-start) · [分类设置示例](#quick-example)。
 
 **使用边界：** 需先运行 ActivityWatch 并配置分类规则；行为分数不是心理或医学诊断。
 
 [按任务浏览欧八同学的全部工具](https://github.com/ouxxyy/ouba-classmate#按需求找)；如果本项目有帮助，欢迎收藏当前仓库。
-
 <!-- discovery:end -->
 
 <!-- hero:start -->
