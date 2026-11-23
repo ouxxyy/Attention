@@ -7,9 +7,9 @@
 
 Local ActivityWatch focus analytics and context-switching dashboard.
 
-**30 秒核心结论：** 直连本地 ActivityWatch（5600 端口） · 分析任务切换与近 7 天专注趋势 · 100% 本地运行 0 上传 · MIT 开源 0 元 · 更新于 2026-11-21。
+**第一次使用可以这样试**　先启动 ActivityWatch 并确认它已记录一段电脑活动，再启动仪表盘，为常用应用设置分类，对照时间线查看一次任务切换。
 
-**一键运行 / 收藏：** `git clone https://github.com/ouxxyy/Attention.git && cd Attention && npm install && npm run dev` ｜ `gh api -X PUT /user/starred/ouxxyy/Attention`
+**本地运行：** `git clone https://github.com/ouxxyy/Attention.git && cd Attention && npm install && npm run dev`
 
 **开始使用：** [运行 ActivityWatch 与仪表盘](#quick-start) · [分类设置示例](#quick-example)。
 
